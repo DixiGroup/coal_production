@@ -73,7 +73,6 @@ def dict_to_list(dict_, headers):
         l.append(new_l)
     return l
 
-print("started")
 if not os.path.exists("coal_production.log"):
     f = open("coal_production.log", "w")
     f.close()
