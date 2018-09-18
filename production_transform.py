@@ -5,6 +5,7 @@ import csv
 import re
 from datetime import datetime
 import xlsxwriter 
+import sys
  
 MONTH_DICTIONARY = {"січень":"01", "лютий":"02", "березень":"03", "квітень":"04", "травень":"05", "червень":"06", "липень":"07", "серпень":"08", "вересень":"09", "жовтень":"10", "листопад":"11", "грудень":"12"}
 COMPANY_CODES =  {'ДП"ДержВуглеПостач"':"40225511", 'ДП "Волиньвугілля"':"32365965", 'ДП "Мирноградвугілля"':"32087941", 
@@ -72,6 +73,17 @@ def dict_to_list(dict_, headers):
         l.append(new_l)
     return l
 
+print("started")
+if not os.path.exists("coal_production.log"):
+    f = open("coal_production.log", "w")
+    f.close()
+f = open("coal_production.log", "a")
+sys.stdout = f
+sys.stderr = f
+
+print("----------------")
+print(datetime.now())
+
 with open(FIELD_NAMES_FILE, 'r') as vf:
     var_reader = csv.reader(vf)
     fields_dictionary = {}
@@ -83,10 +95,11 @@ for k in fields_dictionary.keys():
 sheet_dict['month'] = []
 
 files = os.listdir(FOLDER_NAME)
-files = [f for f in files if f.endswith(".xls")]
+files = [f for f in files if f.endswith(".xls") or f.endswith(".xlsx")]
 for f in files:
     date_ = ""
-    wb = xlrd.open_workbook(os.path.join(FOLDER_NAME, f), formatting_info=True)
+    print(f)
+    wb = xlrd.open_workbook(os.path.join(FOLDER_NAME, f))
     load_workbook(wb)
 
 codes = [COMPANY_CODES[c] for c in sheet_dict['company']]
@@ -97,7 +110,7 @@ coal_list = dict_to_list(sheet_dict, HEADERS)
 coal_list = sorted(coal_list, key=lambda x: x[0],reverse=True)
 month_to_filename = datetime.strftime(coal_list[0][0], '%Y_%m')
 
-with open(OUT_FILENAME + month_to_filename + ".csv", "w") as cfile:
+with open(os.path.join("output", OUT_FILENAME) + month_to_filename + ".csv", "w", newline='') as cfile:
     csvwriter = csv.writer(cfile)
     csvwriter.writerow(HEADERS)
     for i in range(len(coal_list)):
@@ -105,7 +118,7 @@ with open(OUT_FILENAME + month_to_filename + ".csv", "w") as cfile:
         l[0] = datetime.strftime(l[0],"%m.%Y")
         csvwriter.writerow(l)
 
-out_wb = xlsxwriter.Workbook(OUT_FILENAME + month_to_filename + ".xlsx")
+out_wb = xlsxwriter.Workbook(os.path.join("output", OUT_FILENAME) + month_to_filename + ".xlsx")
 worksheet = out_wb.add_worksheet()
 datef = out_wb.add_format({'num_format':"mm.yyyy"})
 numf = out_wb.add_format({'num_format':"0.00"})
@@ -121,3 +134,6 @@ for i in range(len(coal_list)):
         else:
             worksheet.write(i+1, j, coal_list[i][j])
 out_wb.close()      
+
+print("No errors were caught")
+print("-----------------")
